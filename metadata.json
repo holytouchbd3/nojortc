@@ -1,0 +1,5 @@
+{
+  "name": "GPS Tracker Management System",
+  "description": "A web application to manage the sales, delivery, and installation of GPS trackers through a network of local technicians.",
+  "requestFramePermissions": []
+}
