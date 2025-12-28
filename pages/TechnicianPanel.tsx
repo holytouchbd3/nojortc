@@ -3,13 +3,14 @@ import type { Install, Technician } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import Header from '../components/Header';
 import { InstallStatus } from '../types';
-// FIX: Import the StatusBadge component to display the install status.
 import StatusBadge from '../components/StatusBadge';
 import UpdateStatusModal from '../components/UpdateStatusModal';
 import { PhoneIcon } from '../components/icons/PhoneIcon';
 import { WhatsAppIcon } from '../components/icons/WhatsAppIcon';
 import { CollectionIcon } from '../components/icons/CollectionIcon';
 import { CashIcon } from '../components/icons/CashIcon';
+import { sendWhatsappMessage } from '../whatsappApi';
+import { generateWhatsappMessage } from '../utils';
 
 interface TechnicianPanelProps {
     loggedInTechnician: Technician;
@@ -44,14 +45,27 @@ const TechnicianPanel: React.FC<TechnicianPanelProps> = ({ loggedInTechnician, o
         setUpdateModalOpen(true);
     };
 
-    const handleUpdateInstall = (updateData: Partial<Install>) => {
-        if(selectedInstall) {
+    const handleUpdateInstall = async (updateData: Partial<Install>) => {
+        if (selectedInstall) {
             const updatedInstall = { ...selectedInstall, ...updateData };
             updateInstallInList(updatedInstall);
+
+            if (selectedInstall.status !== updatedInstall.status) {
+                const message = generateWhatsappMessage(updatedInstall);
+                if (message) {
+                    try {
+                        await sendWhatsappMessage(updatedInstall.customer.phone, message);
+                        alert('স্ট্যাটাস আপডেট হয়েছে এবং গ্রাহককে জানানো হয়েছে।');
+                    } catch (error) {
+                        console.error(error);
+                        alert(`স্ট্যাটাস আপডেট হয়েছে, কিন্তু গ্রাহককে মেসেজ পাঠানো যায়নি। ত্রুটি: ${error instanceof Error ? error.message : String(error)}`);
+                    }
+                }
+            }
         }
         setUpdateModalOpen(false);
         setSelectedInstall(null);
-    }
+    };
 
     const canUpdateStatus = (status: InstallStatus) => {
         return [InstallStatus.DeviceShipped, InstallStatus.InstallationScheduled, InstallStatus.Completed].includes(status);

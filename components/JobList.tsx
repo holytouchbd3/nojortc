@@ -5,7 +5,7 @@ import InstallItem from './JobItem'; // Filename kept for simplicity
 interface InstallListProps {
     installs: Install[];
     technicians: Technician[];
-    onUpdateInstall: (install: Install) => void;
+    onUpdateInstall: (install: Install) => Promise<void>;
     onOpenShipModal: (installId: string) => void;
     onOpenPaymentModal: (installId: string) => void;
     onOpenApproveExpenseModal: (installId: string) => void;

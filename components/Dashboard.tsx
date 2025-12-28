@@ -15,7 +15,7 @@ interface DashboardProps {
         completedInstalls: number;
         pendingAmount: number;
     };
-    onUpdateInstall: (install: Install) => void;
+    onUpdateInstall: (install: Install) => Promise<void>;
     onOpenShipModal: (installId: string) => void;
     onOpenPaymentModal: (installId: string) => void;
     onOpenApproveExpenseModal: (installId: string) => void;

@@ -11,6 +11,8 @@ import EditTechnicianModal from '../components/EditTechnicianModal';
 import ShipDeviceModal from '../components/ShipDeviceModal';
 import PaymentApprovalModal from '../components/PaymentApprovalModal';
 import ApproveExpenseModal from '../components/ApproveExpenseModal';
+import { sendWhatsappMessage } from '../whatsappApi';
+import { generateWhatsappMessage } from '../utils';
 
 interface AdminPanelProps {
     onLogout: () => void;
@@ -36,19 +38,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'technicians'>('dashboard');
     const [filters, setFilters] = useState({ searchTerm: '', status: '', technician: '', sort: 'newest' });
 
-    const addInstall = (install: Omit<Install, 'id' | 'orderDate' | 'status' | 'notes'>) => {
+    const addInstall = async (installData: Omit<Install, 'id' | 'orderDate' | 'status' | 'notes'>) => {
         const newInstall: Install = {
-            ...install,
+            ...installData,
             id: `install_${Date.now()}`,
             orderDate: new Date().toISOString(),
             status: InstallStatus.NewOrder,
             notes: [],
         };
         setInstalls(prevInstalls => [newInstall, ...prevInstalls]);
+        
+        const message = `প্রিয় ${newInstall.customer.name}, আপনার জিপিএস ট্র্যাকার অর্ডারটি গ্রহণ করা হয়েছে। আমরা শীঘ্রই আপনার সাথে যোগাযোগ করে বিস্তারিত জানাব। ধন্যবাদ।`;
+        try {
+            await sendWhatsappMessage(newInstall.customer.phone, message);
+            alert('নতুন ইন্সটল যোগ করা হয়েছে এবং গ্রাহককে জানানো হয়েছে।');
+        } catch (error) {
+            console.error(error);
+            alert(`নতুন ইন্সটল যোগ করা হয়েছে, কিন্তু গ্রাহককে মেসেজ পাঠানো যায়নি। ত্রুটি: ${error instanceof Error ? error.message : String(error)}`);
+        }
     };
     
-    const updateInstall = (updatedInstall: Install) => {
+    const updateInstall = async (updatedInstall: Install) => {
+        const oldInstall = installs.find(i => i.id === updatedInstall.id);
         setInstalls(prevInstalls => prevInstalls.map(install => (install.id === updatedInstall.id ? updatedInstall : install)));
+        
+        if (oldInstall && oldInstall.status !== updatedInstall.status) {
+            const message = generateWhatsappMessage(updatedInstall);
+            if (message) {
+                try {
+                    await sendWhatsappMessage(updatedInstall.customer.phone, message);
+                } catch (error) {
+                    console.error("WhatsApp Error:", error);
+                    alert(`স্ট্যাটাস আপডেট হয়েছে, কিন্তু মেসেজ পাঠানো যায়নি। ত্রুটি: ${error instanceof Error ? error.message : String(error)}`);
+                }
+            }
+        }
     };
 
     const addTechnician = (technician: Omit<Technician, 'id'>) => {
@@ -89,17 +113,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
         }
     };
 
-    const handleShipDevice = (shippingInfo: { deviceType: 'Voice' | 'Non-Voice'; courierService: string; imei: string; }) => {
+    const handleShipDevice = async (shippingInfo: { deviceType: 'Voice' | 'Non-Voice'; courierService: string; imei: string; }) => {
         if (selectedInstall) {
-            updateInstall({ ...selectedInstall, ...shippingInfo, status: InstallStatus.DeviceShipped });
+            await updateInstall({ ...selectedInstall, ...shippingInfo, status: InstallStatus.DeviceShipped });
         }
         setIsShipModalOpen(false);
         setSelectedInstall(null);
     };
     
-    const handleApprovePayment = (amountReceived: number) => {
+    const handleApprovePayment = async (amountReceived: number) => {
         if (selectedInstall) {
-            updateInstall({
+            await updateInstall({
                 ...selectedInstall,
                 status: InstallStatus.PaymentReceived,
                 paymentDetails: {
@@ -113,9 +137,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
         setSelectedInstall(null);
     };
 
-    const handleApproveExpense = (approvedAmount: number) => {
+    const handleApproveExpense = async (approvedAmount: number) => {
         if (selectedInstall && selectedInstall.travelExpense) {
-            updateInstall({
+            await updateInstall({
                 ...selectedInstall,
                 travelExpense: {
                     ...selectedInstall.travelExpense,

@@ -4,7 +4,7 @@ import { InstallStatus } from '../types';
 
 interface UpdateStatusModalProps {
     onClose: () => void;
-    onUpdate: (updateData: Partial<Install>) => void;
+    onUpdate: (updateData: Partial<Install>) => Promise<void>;
     install: Install;
     technician: Technician;
 }
@@ -35,7 +35,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({ onClose, onUpdate
     }
 
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         const updateData: Partial<Install> = { status };
@@ -66,7 +66,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({ onClose, onUpdate
             updateData.travelExpense = { amount: Number(expense), status: 'pending' };
         }
 
-        onUpdate(updateData);
+        await onUpdate(updateData);
     };
 
     return (

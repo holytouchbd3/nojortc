@@ -8,7 +8,7 @@ import { PhoneIcon } from './icons/PhoneIcon';
 interface InstallItemProps {
     install: Install;
     technician: Technician | null;
-    onUpdateInstall: (install: Install) => void;
+    onUpdateInstall: (install: Install) => Promise<void>;
     onOpenShipModal: (installId: string) => void;
     onOpenPaymentModal: (installId: string) => void;
     onOpenApproveExpenseModal: (installId: string) => void;
@@ -16,12 +16,12 @@ interface InstallItemProps {
 
 const InstallItem: React.FC<InstallItemProps> = ({ install, technician, onUpdateInstall, onOpenShipModal, onOpenPaymentModal, onOpenApproveExpenseModal }) => {
     
-    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newStatus = e.target.value as InstallStatus;
         if (newStatus === InstallStatus.DeviceShipped && !install.imei) {
             onOpenShipModal(install.id);
         } else {
-            onUpdateInstall({ ...install, status: newStatus });
+            await onUpdateInstall({ ...install, status: newStatus });
         }
     };
     
